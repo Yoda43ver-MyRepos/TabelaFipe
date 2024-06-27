@@ -1,11 +1,14 @@
 package br.com.alura.TabelaFipe.principal;
 
 import br.com.alura.TabelaFipe.model.Dados;
+import br.com.alura.TabelaFipe.model.DadosVeiculo;
 import br.com.alura.TabelaFipe.model.Modelos;
 import br.com.alura.TabelaFipe.service.ConsumoApi;
 import br.com.alura.TabelaFipe.service.Convertedados;
-import java.util.Comparator;
-import java.util.Scanner;
+import com.fasterxml.jackson.core.JsonToken;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Principal {
     private Scanner leitura = new Scanner(System.in);
@@ -50,10 +53,42 @@ public class Principal {
 
         json = consumo.obterJson(endereco);
         var modeloLista = conversor.converterParaClasse(json,Modelos.class);
-        System.out.println("\nModelos desa marca: ");
+
+        System.out.println("\nModelos dessa marca: ");
         modeloLista.modelos().stream()
                 .sorted(Comparator.comparing(Dados::codigo))
+                .collect(Collectors.toList())
                 .forEach(System.out::println);
+
+        System.out.println();
+        System.out.print("Digite um trecho do nome do veículo para consulta:");
+        var nomeVeiculo =  leitura.nextLine();
+
+        List<Dados> modelosFiltrados = modeloLista.modelos().stream()
+                .filter(m -> m.nome().toLowerCase().contains(nomeVeiculo.toLowerCase()))
+                .collect(Collectors.toList());
+
+        System.out.println("\nModelos Filtrados:");
+        modelosFiltrados.forEach(System.out::println);
+
+        System.out.print("\nDigite o código do modelo para consultar valores:");
+        var codigoModelo = leitura.nextLine();
+        endereco += "/"+codigoModelo+"/anos";
+
+        json = consumo.obterJson(endereco);
+        List<Dados> anos = conversor.converterListaParaClasse(json, Dados.class);
+
+        List<DadosVeiculo> veiculos = new ArrayList<>();
+
+        for (int i = 0; i < anos.size(); i++) {
+          var enderecoAnos = endereco + "/"+ anos.get(i).codigo();
+          json = consumo.obterJson(enderecoAnos);
+          DadosVeiculo veiculo = conversor.converterParaClasse(json,DadosVeiculo.class);
+          veiculos.add(veiculo);
+        }
+        veiculos.stream()
+                        .sorted(Comparator.comparing(DadosVeiculo::ano).reversed())
+                                .forEach(System.out::println);
 
 
 
